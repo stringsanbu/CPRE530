@@ -1,0 +1,2 @@
+100 packets transmitted, 100 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 1.481/1.549/1.756/0.041 ms

@@ -1,0 +1,4 @@
+PING 192.245.179.63 (192.245.179.63): 1000 data bytes
+
+--- 192.245.179.63 ping statistics ---
+100 packets transmitted, 0 packets received, 100.0% packet loss

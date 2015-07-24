@@ -1,0 +1,4 @@
+PING 129.186.105.253 (129.186.105.253): 1000 data bytes
+
+--- 129.186.105.253 ping statistics ---
+100 packets transmitted, 0 packets received, 100.0% packet loss
