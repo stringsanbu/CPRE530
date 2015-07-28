@@ -82,7 +82,26 @@ struct icmphdr
       u_int16_t	id;
       u_int16_t	sequence;
 };
+struct tcphdr {
+         u_int16_t   source;
+         u_int16_t   dest;
+         u_int32_t   seq;
+         u_int32_t   ack_seq;
+         u_int16_t   res1:4,
+                 doff:4,
+                 fin:1,
+                 syn:1,
+                 rst:1,
+                 psh:1,
+                 ack:1,
+                 urg:1,
+                 ece:1,
+                 cwr:1;
+		 u_int16_t   window;
+         u_int16_t   check;
+         u_int16_t   urg_ptr;
 
+};
 /* default snap length (maximum bytes per packet to capture) */
 #define SNAP_LEN 1518
 
@@ -144,8 +163,9 @@ struct sniff_tcp {
 };
 
 void print_payload(const u_char *payload, int len);
-
+void print_tcp_packet(unsigned char* Buffer, int Size);
 void print_hex_ascii_line(const u_char *payload, int len, int offset);
+void PrintData (unsigned char* data , int Size);
 
 int main(int argc, char** argv)
 {
@@ -376,6 +396,7 @@ void ethernet_print(const u_char* p, u_int len)
 		switch(ip->ip_p) {
 		case 6:
 			printf("   \tProtocol: TCP\n");
+			print_tcp_packet(p, (int) len);
 			break;
 		case 17:
 			printf("   \tProtocol: UDP\n");
@@ -546,3 +567,85 @@ void print_icmp_packet(const u_char* Buffer , int Size)
     printf("   |-Sequence : %d\n",ntohs(icmph->sequence));
     printf("\n");
 }
+
+void print_tcp_packet(unsigned char* Buffer, int Size)
+{
+    unsigned short iphdrlen;
+     
+    struct iphdr *iph = (struct iphdr *)Buffer;
+    iphdrlen = iph->ihl*4;
+     
+    struct tcphdr *tcph=(struct tcphdr*)(Buffer + iphdrlen);
+         
+    printf("\n");
+    printf("TCP Header\n");
+    printf("   |-Source Port      : %u\n",ntohs(tcph->source));
+    printf("   |-Destination Port : %u\n",ntohs(tcph->dest));
+    printf("   |-Sequence Number    : %u\n",ntohl(tcph->seq));
+    printf("   |-Acknowledge Number : %u\n",ntohl(tcph->ack_seq));
+    printf("   |-Header Length      : %d DWORDS or %d BYTES\n" ,(unsigned int)tcph->doff,(unsigned int)tcph->doff*4);
+    //printf("   |-CWR Flag : %d\n",(unsigned int)tcph->cwr);
+    //printf("   |-ECN Flag : %d\n",(unsigned int)tcph->ece);
+    printf("   |-Urgent Flag          : %d\n",(unsigned int)tcph->urg);
+    printf("   |-Acknowledgement Flag : %d\n",(unsigned int)tcph->ack);
+    printf("   |-Push Flag            : %d\n",(unsigned int)tcph->psh);
+    printf("   |-Reset Flag           : %d\n",(unsigned int)tcph->rst);
+    printf("   |-Synchronise Flag     : %d\n",(unsigned int)tcph->syn);
+    printf("   |-Finish Flag          : %d\n",(unsigned int)tcph->fin);
+    printf("   |-Window         : %d\n",ntohs(tcph->window));
+    printf("   |-Checksum       : %d\n",ntohs(tcph->check));
+    printf("   |-Urgent Pointer : %d\n",tcph->urg_ptr);
+    printf("\n");
+    printf("                        DATA Dump                         ");
+    printf("\n");
+         
+    printf("IP Header\n");
+    PrintData(Buffer,iphdrlen);
+         
+    printf("TCP Header\n");
+    PrintData(Buffer+iphdrlen,tcph->doff*4);
+         
+    printf("Data Payload\n");  
+    PrintData(Buffer + iphdrlen + tcph->doff*4 , (Size - tcph->doff*4-iph->ihl*4) );
+                         
+    printf("\n###########################################################");
+}
+
+void PrintData (unsigned char* data , int Size)
+{
+    int i, j; 
+    for(i=0 ; i < Size ; i++)
+    {
+        if( i!=0 && i%16==0)   //if one line of hex printing is complete...
+        {
+            printf("         ");
+            for(j=i-16 ; j<i ; j++)
+            {
+                if(data[j]>=32 && data[j]<=128)
+                    printf("%c",(unsigned char)data[j]); //if its a number or alphabet
+                 
+                else printf("."); //otherwise print a dot
+            }
+            printf("\n");
+        } 
+         
+        if(i%16==0) printf("   ");
+            printf(" %02X",(unsigned int)data[i]);
+                 
+        if( i==Size-1)  //print the last spaces
+        {
+            for(j=0;j<15-i%16;j++) printf("   "); //extra spaces
+             
+            printf("         ");
+             
+            for(j=i-i%16 ; j<=i ; j++)
+            {
+                if(data[j]>=32 && data[j]<=128) printf("%c",(unsigned char)data[j]);
+                else printf(".");
+            }
+            printf("\n");
+        }
+    }
+}
+
+
